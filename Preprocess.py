@@ -57,22 +57,24 @@ for idx, row in tqdm(df.iterrows(), total=len(df), desc="预处理正样本"):
 
     # 读取CT
     ct, ori, spa, direction = load_mhd(path)
-    ct_norm = normalize(ct)
 
     # 坐标转换
     x, y, z = world_to_pixel(row.coordX, row.coordY, row.coordZ, ori, spa, direction)
 
     if not (0 <= z < ct.shape[0]):
         continue
+    
+    img = ct[z]
 
     # 生成 2D mask
     r = max(row.diameter_mm/2, 2)
-    mask_slice = create_mask_2d(ct.shape, x, y, r, spa[0], spa[1])
+    mask_slice = create_mask_2d(img.shape, x, y, r, spa[0], spa[1])
+    img = normalize(img)
 
     # 保存：只存结节所在层
     save_name = f"pos_{seriesuid}_{idx}.npz"
     save_path = os.path.join(SAVE_DIR, save_name)
-    np.savez_compressed(save_path, img=ct_norm[z], mask=mask_slice)
+    np.savez_compressed(save_path, img=img, mask=mask_slice)
     
     positive_list.append({
         "file_path": save_path,
